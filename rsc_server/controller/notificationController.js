@@ -1,64 +1,63 @@
-// communicates with database
-/*
-/**
- * Creates a new profile and store in the database
- * @param {*} message
- * @returns Name
-
-function print(message) { return name}
-
-print()
-*/
-
-/*
-function or async function
-await - halt on findOne if resolve or reject 
-*/
-/*
-await add()
-
-function add(x, y) {
-    return new Promise((resolve, reject) => {
-        //fromRemote = addchuchunes..
-        resolve(value)
-    })
-}
-*/
+const Client = require("../model/Clients")
+const Provider = require("../model/Providers")
+const Project = require("../model/Projects")
+const Notification = require("../model/Notifications")
+const raise = require("../utils/raise")
 
 /**
- * Create a new project for a user
- * @param {*} userId
- * @param {*} type
+ * @param {string} sourceId
+ * @param {string} destId
+ * @param {string} projectId
+ * @param {string} message
  * @returns 
  */
-
-function createNotification(userId, type){
-        return new Promise(async (resolve, reject) => {
-            const user = await Profile.findOne({ uuid: userId })
-            if (user === null) return reject(raise("No User Found", 404))
+function createNotification(destId,sourceId,projectId,message){
+    return new Promise(async (resolve, reject) => {
+    const source = await Provider.findOne({ sourceId: sourceId })
+    const project = await Project.findOne({ _id: projectId })
+    const name = source.name
+    const title = project.title
+    Notification.create({
+        uuid : destId,
+        sourceUser: name,
+        projectTitle: title,
+        message: message,
+        }).then(resolve(null))
+        .catch(err => reject(raise(err.message, 400)))
+    })
     
-            // Creates the project info then add the project id to the user
-            Project.create(type)
-                .catch(err => reject(raise(err.message, 400)))
-                .then(value => {
-                    user.projects.push(value._id)
-                    user.save()
-                        .catch(err => reject(raise(err.message, 400)))
-                        .then(value => resolve(null))
-                })
-        })
-    }
+    //could use the values to send a push notification?
+}
 
 /**
- * Create a new project for a user
- * @param {*} userId
  * @param {*} 
  * @returns 
+ * Delete a Notification
  */
-function deleteNotification(userId, ) {
-        return new Promise(async (resolve, reject) => {
-            await Profile.updateOne({ uuid: userId }, { $pull: { projects: projectId } })
-                .catch(err => reject(raise(err.message, 400)))
-                .then(result => resolve(null))
-        })
-    } 
+function deleteNotification(notifId){
+    return new Promise(async (resolve, reject) =>{
+        await Notification.findOneAndDelete({_id: notifId})
+        .then(resolve(null))
+        .catch(err => reject(raise(err.message, 400)))
+    })
+} 
+
+/**
+ * @param {string} uuid
+ * @returns
+ * get all the notifs of the provider based on uuid
+ */
+function getClientNotification(uuid){
+    return new Promise(async (resolve, reject) =>{
+    await Notification.find({uuid:uuid})
+    .then(notifs => {
+        if (notifs.length == 0) return resolve(null)
+        return resolve(notifs)
+    })
+    .catch(err => reject(raise(err.message, 400)))
+    })
+}
+
+module.exports.createNotification = createNotification
+module.exports.deleteNotification = deleteNotification
+module.exports.getClientNotification = getClientNotification
